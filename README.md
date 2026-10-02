@@ -11,9 +11,26 @@ Stack: Node 20+ / Express 5 / Mongoose, React 18 class components (Vite + Tailwi
 ```bash
 docker compose up -d        # MongoDB 7
 cp .env.example .env        # MOCK_AI=true needs no API key
-npm i && npm run seed       # 5 sample entries (all PENDING)
+npm i && npm run seed       # 5 sample entries (all PENDING); replaces existing entries
 npm run dev                 # api + worker + client (http://localhost:5173)
 ```
+
+### No Docker?
+Docker is only a convenience. The app needs a MongoDB connection string in `MONGO_URI` (in `.env`); any MongoDB works
+(tested with 7 and 8).
+
+- **Local install:** install MongoDB Community, start `mongod`, and keep the default `MONGO_URI`.
+- **MongoDB Atlas (free tier):** create a cluster and a database user, allow your IP address, then set
+  `MONGO_URI=mongodb+srv://USER:PASSWORD@cluster0.xxxxx.mongodb.net/smartaudit` (URL-encode special characters in the
+  password).
+
+Then run `npm i && npm run seed && npm run dev` as above. Notes:
+
+- `npm run seed` deletes all audit entries in the database that `MONGO_URI` points to before inserting the samples, so
+  point it at a scratch database.
+- If MongoDB cannot be reached, the API and worker stop with a connection error after about 30 seconds.
+- `npm test` uses an in-memory MongoDB that is downloaded on first run (needs internet). Offline, set
+  `MONGOMS_SYSTEM_BINARY` to the path of a local `mongod`.
 
 | Command | Purpose |
 |---|---|
@@ -31,6 +48,14 @@ If `MOCK_AI=false` but the key is empty, the app logs a warning and uses the moc
 invalid output, that entry is processed by the mock and tagged `mock-fallback`. Restart the API and worker after
 changing `.env`; each logs which provider it is using (`ai.provider`).
 
+## Try it
+1. Open http://localhost:5173. The seeded rows start as `PENDING` and fill in with a score, summary and flags.
+2. Click a row to open the detail sheet. Save **Auditor notes**: instant, the AI is skipped. Change **Core evidence**
+   (amount, description or control) and save: the row returns to `PENDING` and is re-scored.
+3. In the sheet, **Find similar** shows the 3 closest entries by vector. The vector itself is listed under the AI
+   assessment.
+4. **New evidence** ingests an entry; **Use example** fills in a sample.
+
 ## API
 
 | Endpoint | Behaviour |
@@ -38,7 +63,7 @@ changing `.env`; each logs which provider it is using (`ai.provider`).
 | `POST /api/audit-entries` | 202, saved as `PENDING` |
 | `GET /api/audit-entries` | one page: `?page=1&limit=10&search=&status=&risk=&sort=created&direction=desc`; returns `{ items, total, page, pageSize, totalPages }`, vectors omitted |
 | `GET /api/audit-entries/summary` | totals across all entries: `{ total, pending, highRisk, averageRiskScore }` |
-| `GET /api/audit-entries/:id` | one entry |
+| `GET /api/audit-entries/:id` | one entry, including its semantic vector |
 | `PUT /api/audit-entries/:id` | smart delta update; returns `{ entry, path, changedFields, durationMs }` and header `X-Update-Path` |
 | `POST /api/audit-entries/:id/similar` | top 3 most similar completed entries; 409 while the source is not `COMPLETED` |
 
@@ -49,7 +74,7 @@ Requests are scoped to one tenant: `DEFAULT_TENANT_ID`, or the `X-Tenant-Id` hea
 ### AI workload integration
 `AIService` is a facade over providers: a semaphore caps concurrent calls (`AI_MAX_CONCURRENCY`), transient
 429/5xx errors are retried with jittered exponential backoff, and the OpenRouter call has a 15s timeout and a
-zod-validated JSON reply (code fences and surrounding prose are tolerated). If the live provider still fails or returns
+zod-validated JSON reply (code fences and surrounding prose are tolerated, and flag names are normalised). If the live provider still fails or returns
 invalid output, the result is produced by the local engine and tagged `provider: 'mock-fallback'`. The local engine is
 deterministic, which keeps tests stable. A concurrency cap is the rate-limiting strategy; a requests-per-minute limiter
 would be the next step. The semantic vector is always built locally (the brief calls it a mock embedding), so the LLM
@@ -79,7 +104,7 @@ PENDING --claim--> PROCESSING --success--> COMPLETED
 Vectors are built with a hashing trick (tokens hashed into 8 signed buckets, L2-normalised), so descriptions that share
 words get similar vectors. Search is brute-force cosine similarity over the tenant's completed entries: O(n·d) with
 d=8, fine for tens of thousands of records per tenant. At larger scale it moves to Atlas `$vectorSearch` (HNSW) with a
-tenant pre-filter; only `SimilarityService` changes. 
+tenant pre-filter; only `SimilarityService` changes.
 
 ### Delta evaluation and fast track
 `evaluateDelta` compares normalised values (numbers via `Number`, strings trimmed) of `monetaryImpact`, `description`
