@@ -65,7 +65,8 @@ export const BACKOFF_BASE_MS = 1000;
 export const POLL_INTERVAL_MS = 500;
 
 // AI
-export const MOCK_DELAY_MS = 400;
+export const MOCK_DELAY_MS = 2000; // about as long as a real model call (the brief suggests 400)
+export const MOCK_DELAY_JITTER = 0.3; // each mock call takes the base delay +/- 30%, like a real model
 export const VECTOR_DIM = 8;
 export const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 export const AI_REQUEST_TIMEOUT_MS = 15000;

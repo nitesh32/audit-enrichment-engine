@@ -24,7 +24,7 @@ npm run dev                 # api + worker + client (http://localhost:5173)
 ### AI mode
 | Mode | `.env` | Behaviour |
 |---|---|---|
-| Mock (default) | `MOCK_AI=true` | Deterministic local engine with a 400ms simulated delay. No key needed. |
+| Mock (default) | `MOCK_AI=true` | Local rule-based engine, no key needed. Results are deterministic; the simulated response time is about 2s and varies +/-30% per call (`MOCK_DELAY_MS` in `constants.js`), so rows visibly go Pending, Processing, then done. |
 | Real AI | `MOCK_AI=false`, `OPENROUTER_API_KEY=<your key>` | Risk score, summary and flags come from an LLM through [OpenRouter](https://openrouter.ai). Pick the model with `OPENROUTER_MODEL` (default `openai/gpt-4o-mini`). |
 
 If `MOCK_AI=false` but the key is empty, the app logs a warning and uses the mock. If the LLM call fails or returns
