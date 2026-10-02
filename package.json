@@ -1,0 +1,23 @@
+{
+  "name": "smartaudit",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,worker,client -c blue,magenta,green \"npm run dev:api -w server\" \"npm run dev:worker -w server\" \"npm run dev -w client\"",
+    "seed": "node server/scripts/seed.js --reset",
+    "worker": "npm run start:worker -w server",
+    "test": "npm test -w server",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "concurrently": "^10.0.5",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react": "^7.37.5",
+    "globals": "^17.13.0"
+  }
+}
