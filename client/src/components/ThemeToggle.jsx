@@ -24,7 +24,7 @@ export default class ThemeToggle extends React.Component {
     const Icon = isDark ? Sun : Moon;
     return (
       <Button variant="ghost" size="icon" onClick={this.toggle} aria-label={`Switch to ${isDark ? 'light' : 'dark'} theme`}>
-        <Icon className="size-4" aria-hidden="true" />
+        <Icon aria-hidden="true" />
       </Button>
     );
   }

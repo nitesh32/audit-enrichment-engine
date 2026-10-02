@@ -14,7 +14,7 @@ export default class PageHeader extends React.Component {
           </p>
         </div>
         <Button variant="primary" onClick={this.props.onNewEntry}>
-          <Plus className="size-4" aria-hidden="true" />
+          <Plus aria-hidden="true" />
           New evidence
         </Button>
       </header>

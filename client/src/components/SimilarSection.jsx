@@ -71,7 +71,7 @@ export default class SimilarSection extends React.Component {
           <Tooltip content={canSearch ? null : 'Available after AI analysis'}>
             <span className="inline-flex">
               <Button variant="secondary" size="sm" disabled={!canSearch || similar.loading} onClick={onFind}>
-                <Search className="size-3.5" aria-hidden="true" />
+                <Search aria-hidden="true" />
                 Find similar
               </Button>
             </span>

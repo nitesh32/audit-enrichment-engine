@@ -1,5 +1,4 @@
 import React from 'react';
-import { Loader2 } from 'lucide-react';
 import { validateField, validateForm } from '../lib/validation.js';
 import { Button } from './ui/button.jsx';
 import { Dialog } from './ui/dialog.jsx';
@@ -105,8 +104,7 @@ export default class NewEntryDialog extends React.Component {
             <Button variant="ghost" onClick={() => this.setState({ form: EXAMPLE_FORM, errors: {} })}>
               Use example
             </Button>
-            <Button type="submit" variant="primary" disabled={submitting}>
-              {submitting && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
+            <Button type="submit" variant="primary" loading={submitting}>
               Ingest evidence
             </Button>
           </div>

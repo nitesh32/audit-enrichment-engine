@@ -31,6 +31,7 @@
   --color-fg-muted: oklch(0.5 0.012 260);
   --color-fg-subtle: oklch(0.53 0.01 260);
   --color-accent: oklch(0.5 0.16 262);
+  --color-accent-hover: oklch(0.44 0.16 262);
   --color-accent-fg: oklch(0.99 0 0);
   --color-ring: oklch(0.6 0.15 262);
   --color-scrim: oklch(0.2 0.01 260 / 0.4);
@@ -57,8 +58,9 @@
   --color-fg: oklch(0.96 0.005 260);
   --color-fg-muted: oklch(0.7 0.01 260);
   --color-fg-subtle: oklch(0.64 0.01 260);
-  --color-accent: oklch(0.68 0.14 262);
-  --color-accent-fg: oklch(0.16 0.01 260);
+  --color-accent: oklch(0.56 0.17 262);
+  --color-accent-hover: oklch(0.51 0.17 262);
+  --color-accent-fg: oklch(0.99 0 0);
   --color-ring: oklch(0.72 0.13 262);
   --color-scrim: oklch(0 0 0 / 0.6);
 

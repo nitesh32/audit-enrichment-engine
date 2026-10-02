@@ -37,7 +37,7 @@ export function Sheet({ open, onOpenChange, title, subtitle, onCloseAutoFocus, c
                   </div>
                   <Dialog.Close asChild>
                     <Button variant="ghost" size="icon" aria-label="Close">
-                      <X className="size-4" aria-hidden="true" />
+                      <X aria-hidden="true" />
                     </Button>
                   </Dialog.Close>
                 </header>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Loader2, Zap } from 'lucide-react';
+import { Zap } from 'lucide-react';
 import { Button } from './ui/button.jsx';
 import { Field, Textarea } from './ui/field.jsx';
 
@@ -21,8 +21,8 @@ export default class NotesSection extends React.Component {
             placeholder="Add your review notes"
           />
         </Field>
-        <Button variant="secondary" className="mt-3" disabled={!isDirty || isSaving} onClick={onSave}>
-          {isSaving ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Zap className="size-4" aria-hidden="true" />}
+        <Button variant="secondary" className="mt-3" disabled={!isDirty} loading={isSaving} onClick={onSave}>
+          {!isSaving && <Zap aria-hidden="true" />}
           Save notes
         </Button>
       </section>

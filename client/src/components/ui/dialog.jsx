@@ -35,7 +35,7 @@ export function Dialog({ open, onOpenChange, title, children }) {
                     <RadixDialog.Title className="text-title font-semibold">{title}</RadixDialog.Title>
                     <RadixDialog.Close asChild>
                       <Button variant="ghost" size="icon" aria-label="Close">
-                        <X className="size-4" aria-hidden="true" />
+                        <X aria-hidden="true" />
                       </Button>
                     </RadixDialog.Close>
                   </header>

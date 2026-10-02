@@ -1,5 +1,4 @@
 import React from 'react';
-import { Loader2 } from 'lucide-react';
 import { Button } from './ui/button.jsx';
 import { Field, Input, Textarea } from './ui/field.jsx';
 
@@ -26,8 +25,7 @@ export default class CoreEvidenceSection extends React.Component {
             <Input id="core-control" value={draft.controlId} onChange={this.change('controlId')} className="font-mono" />
           </Field>
         </div>
-        <Button variant="secondary" className="mt-3" disabled={!isDirty || !isValid || isSaving} onClick={onSave}>
-          {isSaving && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
+        <Button variant="secondary" className="mt-3" disabled={!isDirty || !isValid} loading={isSaving} onClick={onSave}>
           Save &amp; re-analyze
         </Button>
       </section>

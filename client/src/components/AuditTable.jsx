@@ -38,9 +38,9 @@ export default class AuditTable extends React.Component {
       return this.renderMessage(
         'No entries match these filters',
         null,
-        <button className="text-accent underline underline-offset-2" onClick={onClearFilters}>
+        <Button variant="link" onClick={onClearFilters}>
           Clear filters
-        </button>,
+        </Button>,
       );
     }
     return this.renderMessage(
