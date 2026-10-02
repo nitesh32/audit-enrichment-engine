@@ -1,7 +1,7 @@
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:4000';
 const UPDATE_PATH_HEADER = 'X-Update-Path';
 
-export class ApiError extends Error {
+class ApiError extends Error {
   constructor(status, code, message, details) {
     super(message);
     this.name = 'ApiError';
@@ -27,6 +27,7 @@ async function request(path, { method = 'GET', body } = {}) {
 
 export const auditApi = {
   list: async () => (await request('')).data,
+  get: async (id) => (await request(`/${id}`)).data,
   create: async (entry) => (await request('', { method: 'POST', body: entry })).data,
   update: (id, patch) => request(`/${id}`, { method: 'PUT', body: patch }),
   findSimilar: async (id) => (await request(`/${id}/similar`, { method: 'POST' })).data,

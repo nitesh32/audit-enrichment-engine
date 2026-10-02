@@ -1,80 +1,156 @@
 @import 'tailwindcss';
 
-:root {
-  --surface: oklch(0.985 0 0);
-  --panel: oklch(1 0 0);
-  --border: oklch(0.9 0 0);
-  --text: oklch(0.2 0 0);
-  --text-muted: oklch(0.5 0 0);
-  --accent: oklch(0.45 0.15 260);
-  --accent-text: oklch(1 0 0);
-  --neutral-soft: oklch(0.94 0 0);
-  --success-soft: oklch(0.93 0.07 150);
-  --success: oklch(0.4 0.12 150);
-  --warning-soft: oklch(0.94 0.08 85);
-  --warning: oklch(0.45 0.11 70);
-  --danger-soft: oklch(0.93 0.06 25);
-  --danger: oklch(0.45 0.17 25);
-  --flash: oklch(0.95 0.08 150);
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
+  --radius: 0.5rem;
+
+  /* type scale */
+  --text-chip: 0.6875rem;
+  --text-chip--line-height: 1rem;
+  --text-label: 0.75rem;
+  --text-label--line-height: 1rem;
+  --text-body: 0.8125rem;
+  --text-body--line-height: 1.25rem;
+  --text-title: 0.875rem;
+  --text-title--line-height: 1.25rem;
+  --text-page: 1.25rem;
+  --text-page--line-height: 1.75rem;
+  --text-kpi: 1.75rem;
+  --text-kpi--line-height: 2rem;
+
+  /* light */
+  --color-bg: oklch(0.99 0 0);
+  --color-surface: oklch(1 0 0);
+  --color-surface-2: oklch(0.975 0.002 260);
+  --color-border: oklch(0.92 0.004 260);
+  --color-border-strong: oklch(0.86 0.006 260);
+  --color-fg: oklch(0.21 0.01 260);
+  --color-fg-muted: oklch(0.5 0.012 260);
+  --color-fg-subtle: oklch(0.53 0.01 260);
+  --color-accent: oklch(0.5 0.16 262);
+  --color-accent-fg: oklch(0.99 0 0);
+  --color-ring: oklch(0.6 0.15 262);
+  --color-scrim: oklch(0.2 0.01 260 / 0.4);
+
+  /* risk and status: text / soft background */
+  --color-risk-high: oklch(0.52 0.2 25);
+  --color-risk-high-bg: oklch(0.96 0.03 25);
+  --color-risk-med: oklch(0.5 0.12 70);
+  --color-risk-med-bg: oklch(0.97 0.04 85);
+  --color-risk-low: oklch(0.48 0.12 155);
+  --color-risk-low-bg: oklch(0.96 0.03 155);
+  --color-pending: oklch(0.5 0.02 260);
+  --color-pending-bg: oklch(0.96 0.005 260);
+  --color-failed: oklch(0.5 0.19 15);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --surface: oklch(0.18 0 0);
-    --panel: oklch(0.22 0 0);
-    --border: oklch(0.32 0 0);
-    --text: oklch(0.95 0 0);
-    --text-muted: oklch(0.7 0 0);
-    --accent: oklch(0.7 0.12 260);
-    --accent-text: oklch(0.15 0 0);
-    --neutral-soft: oklch(0.3 0 0);
-    --success-soft: oklch(0.3 0.06 150);
-    --success: oklch(0.85 0.1 150);
-    --warning-soft: oklch(0.32 0.06 85);
-    --warning: oklch(0.88 0.1 85);
-    --danger-soft: oklch(0.3 0.08 25);
-    --danger: oklch(0.82 0.12 25);
-    --flash: oklch(0.32 0.07 150);
+:root.dark {
+  color-scheme: dark;
+  --color-bg: oklch(0.16 0.008 260);
+  --color-surface: oklch(0.19 0.008 260);
+  --color-surface-2: oklch(0.22 0.008 260);
+  --color-border: oklch(0.28 0.008 260);
+  --color-border-strong: oklch(0.36 0.01 260);
+  --color-fg: oklch(0.96 0.005 260);
+  --color-fg-muted: oklch(0.7 0.01 260);
+  --color-fg-subtle: oklch(0.64 0.01 260);
+  --color-accent: oklch(0.68 0.14 262);
+  --color-accent-fg: oklch(0.16 0.01 260);
+  --color-ring: oklch(0.72 0.13 262);
+  --color-scrim: oklch(0 0 0 / 0.6);
+
+  --color-risk-high: oklch(0.72 0.18 25);
+  --color-risk-high-bg: oklch(0.25 0.06 25);
+  --color-risk-med: oklch(0.78 0.13 80);
+  --color-risk-med-bg: oklch(0.25 0.05 85);
+  --color-risk-low: oklch(0.74 0.13 155);
+  --color-risk-low-bg: oklch(0.25 0.05 155);
+  --color-pending: oklch(0.72 0.02 260);
+  --color-pending-bg: oklch(0.25 0.008 260);
+  --color-failed: oklch(0.72 0.17 15);
+}
+
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Tailwind v4 resets buttons to the default cursor; restore it for anything clickable. */
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  [role='tab'] {
+    cursor: pointer;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
   }
 }
 
-@theme inline {
-  --font-sans: ui-sans-serif, system-ui, sans-serif;
-  --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
-  --color-surface: var(--surface);
-  --color-panel: var(--panel);
-  --color-line: var(--border);
-  --color-ink: var(--text);
-  --color-muted: var(--text-muted);
-  --color-accent: var(--accent);
-  --color-on-accent: var(--accent-text);
-  --color-neutral-soft: var(--neutral-soft);
-  --color-success-soft: var(--success-soft);
-  --color-success: var(--success);
-  --color-warning-soft: var(--warning-soft);
-  --color-warning: var(--warning);
-  --color-danger-soft: var(--danger-soft);
-  --color-danger: var(--danger);
+@utility text-label-caps {
+  font-size: var(--text-label);
+  line-height: var(--text-label--line-height);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-fg-subtle);
 }
 
-body {
-  background: var(--surface);
-  color: var(--text);
-  font-family: var(--font-sans);
+@keyframes pulse-dot {
+  50% { opacity: 0.4; }
 }
 
-@keyframes pulse-soft {
-  50% { opacity: 0.55; }
+@keyframes skeleton-pulse {
+  50% { opacity: 0.5; }
 }
 
-@keyframes flash-row {
-  from { background-color: var(--flash); }
-  to { background-color: transparent; }
+@keyframes flash-fade {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
-.badge-pulse { animation: pulse-soft 1.5s ease-in-out infinite; }
-.row-flash { animation: flash-row 600ms ease-out; }
+.animate-pulse-dot { animation: pulse-dot 1.2s ease-in-out infinite; }
+.animate-skeleton { animation: skeleton-pulse 1.4s ease-in-out infinite; }
+
+/* Row flash: an overlay whose opacity fades, so only opacity is animated. */
+tr.row-flash { position: relative; }
+tr.row-flash::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: var(--flash-color);
+  animation: flash-fade 800ms ease-out forwards;
+}
+.flash-high { --flash-color: var(--color-risk-high-bg); }
+.flash-medium { --flash-color: var(--color-risk-med-bg); }
+.flash-low { --flash-color: var(--color-risk-low-bg); }
 
 @media (prefers-reduced-motion: reduce) {
-  .badge-pulse, .row-flash { animation: none; }
+  .animate-pulse-dot,
+  .animate-skeleton,
+  tr.row-flash::after { animation: none; }
+}
+
+.toaster {
+  --normal-bg: var(--color-surface);
+  --normal-text: var(--color-fg);
+  --normal-border: var(--color-border);
+  --border-radius: var(--radius);
+  font-family: var(--font-sans);
 }

@@ -4,7 +4,7 @@ const HTTP_TOO_MANY_REQUESTS = 429;
 const HTTP_SERVER_ERROR = 500;
 const JITTER_FLOOR = 0.5;
 
-export function isTransientHttpError(error) {
+function isTransientHttpError(error) {
   return error?.status === HTTP_TOO_MANY_REQUESTS || error?.status >= HTTP_SERVER_ERROR;
 }
 

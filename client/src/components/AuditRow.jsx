@@ -1,81 +1,79 @@
 import React from 'react';
+import { ChevronRight } from 'lucide-react';
 import { formatCurrency, isAiPending } from '../lib/format.js';
-import SimilarPanel from './SimilarPanel.jsx';
+import { cn } from '../lib/cn.js';
+import FlagsCell from './FlagsCell.jsx';
+import RiskScoreCell from './RiskScoreCell.jsx';
 import StatusBadge from './StatusBadge.jsx';
+import SummaryCell from './SummaryCell.jsx';
 
-const FLASH_DURATION_MS = 600;
-const COLUMN_COUNT = 9;
+const FLASH_DURATION_MS = 800;
 
-/** One table row; flashes briefly when the AI result arrives. */
-export default class AuditRow extends React.Component {
-  state = { flashing: false };
+/** One table row: opens the detail sheet, and flashes when the AI result arrives. */
+export default class AuditRow extends React.PureComponent {
+  state = { flashLevel: null };
   flashTimer = null;
 
   componentDidUpdate(previousProps) {
-    const wasWaiting = isAiPending(previousProps.entry.aiMetadata.status);
-    if (wasWaiting && this.props.entry.aiMetadata.status === 'COMPLETED') {
-      this.setState({ flashing: true });
-      this.flashTimer = setTimeout(() => this.setState({ flashing: false }), FLASH_DURATION_MS);
-    }
+    const { aiMetadata } = this.props.entry;
+    const justCompleted =
+      isAiPending(previousProps.entry.aiMetadata.status) && aiMetadata.status === 'COMPLETED';
+    if (!justCompleted) return;
+    this.setState({ flashLevel: aiMetadata.riskLevel.toLowerCase() });
+    clearTimeout(this.flashTimer);
+    this.flashTimer = setTimeout(() => this.setState({ flashLevel: null }), FLASH_DURATION_MS);
   }
 
   componentWillUnmount() {
     clearTimeout(this.flashTimer);
   }
 
-  renderFlags(flags) {
-    return (
-      <div className="flex flex-wrap gap-1">
-        {flags.map((flag) => (
-          <span key={flag} className="rounded bg-neutral-soft px-1 py-0.5 font-mono text-[10px] text-muted">
-            {flag}
-          </span>
-        ))}
-      </div>
-    );
-  }
+  open = () => this.props.onOpen(this.props.entry._id);
+
+  handleKeyDown = (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    this.open();
+  };
 
   render() {
-    const { entry, similarState, onEdit, onFindSimilar } = this.props;
+    const { entry } = this.props;
     const { aiMetadata } = entry;
-    const isCompleted = aiMetadata.status === 'COMPLETED';
+    const { flashLevel } = this.state;
     return (
-      <>
-        <tr className={`border-t border-line align-top ${this.state.flashing ? 'row-flash' : ''}`}>
-          <td className="px-3 py-3 font-mono text-xs">{entry.evidenceId}</td>
-          <td className="px-3 py-3">{entry.entityName}</td>
-          <td className="px-3 py-3 text-right font-mono tabular-nums">{formatCurrency(entry.monetaryImpact)}</td>
-          <td className="px-3 py-3 font-mono text-xs">{entry.controlId}</td>
-          <td className="px-3 py-3">
-            <StatusBadge status={aiMetadata.status} riskLevel={aiMetadata.riskLevel} />
-          </td>
-          <td className="px-3 py-3 text-right font-mono tabular-nums">{aiMetadata.riskScore ?? '-'}</td>
-          <td className="max-w-xs px-3 py-3 text-sm">
-            <p className="line-clamp-2">{aiMetadata.aiSummary ?? 'Awaiting AI analysis...'}</p>
-          </td>
-          <td className="px-3 py-3">{this.renderFlags(aiMetadata.anomalyFlags)}</td>
-          <td className="whitespace-nowrap px-3 py-3 text-right">
-            <button
-              className="mr-2 rounded border border-line px-2 py-1 text-xs disabled:opacity-40"
-              disabled={!isCompleted || similarState?.loading}
-              title={isCompleted ? 'Find similar historical exceptions' : 'Available once AI analysis completes'}
-              onClick={() => onFindSimilar(entry._id)}
-            >
-              Find similar
-            </button>
-            <button className="rounded border border-line px-2 py-1 text-xs" onClick={() => onEdit(entry._id)}>
-              Edit
-            </button>
-          </td>
-        </tr>
-        {similarState && (
-          <tr className="bg-panel">
-            <td colSpan={COLUMN_COUNT} className="px-6 py-3">
-              <SimilarPanel state={similarState} />
-            </td>
-          </tr>
+      <tr
+        tabIndex={0}
+        data-testid="audit-row"
+        aria-label={`${entry.evidenceId}, ${entry.entityName}`}
+        onClick={this.open}
+        onKeyDown={this.handleKeyDown}
+        className={cn(
+          'h-11 cursor-pointer border-t border-border hover:bg-surface-2 focus-visible:outline-offset-[-2px]',
+          flashLevel && `row-flash flash-${flashLevel}`,
         )}
-      </>
+      >
+        <td className="px-3 py-1">
+          <div className="font-mono text-label text-fg-muted">{entry.evidenceId}</div>
+          <div className="max-w-56 truncate font-medium">{entry.entityName}</div>
+        </td>
+        <td className="px-3 py-1 text-right font-mono tabular-nums">{formatCurrency(entry.monetaryImpact)}</td>
+        <td className="hidden px-3 py-1 font-mono text-label text-fg-muted lg:table-cell">{entry.controlId}</td>
+        <td className="px-3 py-1">
+          <StatusBadge status={aiMetadata.status} riskLevel={aiMetadata.riskLevel} lastError={aiMetadata.lastError} />
+        </td>
+        <td className="px-3 py-1 text-right">
+          <RiskScoreCell score={aiMetadata.riskScore} level={aiMetadata.riskLevel} />
+        </td>
+        <td className="hidden max-w-md px-3 py-1 md:table-cell">
+          <SummaryCell status={aiMetadata.status} summary={aiMetadata.aiSummary} />
+        </td>
+        <td className="hidden px-3 py-1 xl:table-cell">
+          <FlagsCell flags={aiMetadata.anomalyFlags} />
+        </td>
+        <td className="w-8 pr-3 text-fg-subtle">
+          <ChevronRight className="size-4" aria-hidden="true" />
+        </td>
+      </tr>
     );
   }
 }
