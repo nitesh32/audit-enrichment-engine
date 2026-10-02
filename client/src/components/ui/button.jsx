@@ -1,7 +1,7 @@
 import { cva } from 'class-variance-authority';
 import { cn } from '../../lib/cn.js';
 
-const buttonVariants = cva(
+export const buttonVariants = cva(
   'inline-flex shrink-0 items-center justify-center gap-2 rounded-md font-medium select-none transition-[opacity,transform] duration-150 enabled:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50',
   {
     variants: {

@@ -1,22 +1,18 @@
 import React from 'react';
-import { countPending } from '../lib/entryFilters.js';
-import { cn } from '../lib/cn.js';
 
 /** Four headline numbers, divided by 1px rules rather than boxed in cards. */
 export default class KpiStrip extends React.Component {
-  buildTiles(entries) {
-    const scores = entries.map((entry) => entry.aiMetadata.riskScore).filter((score) => score !== null);
-    const averageScore = scores.length ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length) : '-';
+  buildTiles({ total, pending, highRisk, averageRiskScore }) {
     return [
-      { label: 'Total entries', value: entries.length },
-      { label: 'Pending AI', value: countPending(entries), live: true },
-      { label: 'High risk', value: entries.filter((entry) => entry.aiMetadata.riskLevel === 'HIGH').length },
-      { label: 'Avg risk score', value: averageScore },
+      { label: 'Total entries', value: total },
+      { label: 'Pending AI', value: pending, live: true },
+      { label: 'High risk', value: highRisk },
+      { label: 'Avg risk score', value: averageRiskScore ?? '-' },
     ];
   }
 
   render() {
-    const tiles = this.buildTiles(this.props.entries);
+    const tiles = this.buildTiles(this.props.summary);
     return (
       <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border md:grid-cols-4">
         {tiles.map(({ label, value, live }) => (
@@ -25,7 +21,7 @@ export default class KpiStrip extends React.Component {
               {label}
               {live && value > 0 && <span className="size-1.5 animate-pulse-dot rounded-full bg-fg-subtle" />}
             </dt>
-            <dd className={cn('mt-1 font-mono text-kpi font-semibold tabular-nums')}>{value}</dd>
+            <dd className="mt-1 font-mono text-kpi font-semibold tabular-nums">{value}</dd>
           </div>
         ))}
       </dl>

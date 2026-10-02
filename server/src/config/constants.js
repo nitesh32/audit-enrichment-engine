@@ -80,7 +80,20 @@ export const AI_RETRY_BASE_MS = 500;
 
 // API
 export const SIMILAR_TOP_K = 3;
-export const LIST_LIMIT = 100;
+export const DEFAULT_PAGE_SIZE = 10;
+export const MAX_PAGE_SIZE = 50;
+/** Sortable list fields and the document paths they map to. */
+export const LIST_SORT_PATHS = Object.freeze({
+  created: 'created',
+  monetaryImpact: 'monetaryImpact',
+  riskScore: 'aiMetadata.riskScore',
+});
+/** Status filter values and the stored statuses each one matches. */
+export const STATUS_FILTER_MATCHES = Object.freeze({
+  PENDING: [STATUS.PENDING, STATUS.PROCESSING],
+  COMPLETED: [STATUS.COMPLETED],
+  FAILED: [STATUS.FAILED],
+});
 export const UPDATE_MAX_ATTEMPTS = 2;
 export const TENANT_HEADER = 'x-tenant-id';
 export const UPDATE_PATH_HEADER = 'X-Update-Path';

@@ -1,8 +1,11 @@
-import { LIST_LIMIT, LOCK_TTL_MS, STATUS } from '../config/constants.js';
+import mongoose from 'mongoose';
+import { LIST_SORT_PATHS, LOCK_TTL_MS, RISK_LEVEL, STATUS, STATUS_FILTER_MATCHES } from '../config/constants.js';
 import { ConflictError } from '../errors/errors.js';
 import { AuditEntry } from '../models/AuditEntry.js';
 
 const DUPLICATE_KEY_ERROR_CODE = 11000;
+const SEARCHABLE_FIELDS = ['evidenceId', 'entityName', 'description', 'controlId'];
+const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const SIMILARITY_PROJECTION = {
   evidenceId: 1,
@@ -43,12 +46,40 @@ export class AuditRepository {
     return AuditEntry.findOne({ _id: id, tenantId }).lean();
   }
 
-  /** Newest first; the vector is left out to keep the polled payload small. */
-  list(tenantId, limit = LIST_LIMIT) {
-    return AuditEntry.find({ tenantId }, { 'aiMetadata.semanticVector': 0 })
-      .sort({ created: -1 })
-      .limit(limit)
-      .lean();
+  /**
+   * One filtered, sorted page. The vector is left out to keep the polled payload small.
+   * @returns {Promise<{ items: object[], total: number }>} `total` counts all matches, not just this page
+   */
+  async list(tenantId, { page, limit, search, status, risk, sort, direction }) {
+    const filter = this.#buildListFilter(tenantId, { search, status, risk });
+    const [items, total] = await Promise.all([
+      AuditEntry.find(filter, { 'aiMetadata.semanticVector': 0 })
+        .sort({ [LIST_SORT_PATHS[sort]]: direction === 'asc' ? 1 : -1, _id: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+      AuditEntry.countDocuments(filter),
+    ]);
+    return { items, total };
+  }
+
+  /** Headline numbers over all of a tenant's entries, independent of paging and filters. */
+  async summarize(tenantId) {
+    const [row] = await AuditEntry.aggregate([
+      { $match: { tenantId: new mongoose.Types.ObjectId(tenantId) } },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          pending: { $sum: { $cond: [{ $in: ['$aiMetadata.status', STATUS_FILTER_MATCHES.PENDING] }, 1, 0] } },
+          highRisk: { $sum: { $cond: [{ $eq: ['$aiMetadata.riskLevel', RISK_LEVEL.HIGH] }, 1, 0] } },
+          averageRiskScore: { $avg: '$aiMetadata.riskScore' },
+        },
+      },
+    ]);
+    if (!row) return { total: 0, pending: 0, highRisk: 0, averageRiskScore: null };
+    const { total, pending, highRisk, averageRiskScore } = row;
+    return { total, pending, highRisk, averageRiskScore: averageRiskScore === null ? null : Math.round(averageRiskScore) };
   }
 
   /** Completed entries in the same vector space, with only the fields the UI needs. */
@@ -165,6 +196,17 @@ export class AuditRepository {
   /** Removes every entry; used only by the seed script. */
   async deleteAll() {
     await AuditEntry.deleteMany({});
+  }
+
+  #buildListFilter(tenantId, { search, status, risk }) {
+    const filter = { tenantId };
+    if (status) filter['aiMetadata.status'] = { $in: STATUS_FILTER_MATCHES[status] };
+    if (risk) filter['aiMetadata.riskLevel'] = risk;
+    if (search) {
+      const pattern = new RegExp(escapeRegex(search), 'i');
+      filter.$or = SEARCHABLE_FIELDS.map((field) => ({ [field]: pattern }));
+    }
+    return filter;
   }
 
   #claimFilter({ id, workerId, claimedVersion }) {

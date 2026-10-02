@@ -26,7 +26,8 @@ async function request(path, { method = 'GET', body } = {}) {
 }
 
 export const auditApi = {
-  list: async () => (await request('')).data,
+  list: async (params) => (await request(`?${new URLSearchParams(params)}`)).data,
+  summary: async () => (await request('/summary')).data,
   get: async (id) => (await request(`/${id}`)).data,
   create: async (entry) => (await request('', { method: 'POST', body: entry })).data,
   update: (id, patch) => request(`/${id}`, { method: 'PUT', body: patch }),

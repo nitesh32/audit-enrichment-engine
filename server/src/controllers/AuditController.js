@@ -1,5 +1,10 @@
 import { UPDATE_PATH_HEADER } from '../config/constants.js';
-import { createEntrySchema, entryIdParamsSchema, updateEntrySchema } from '../validation/auditSchemas.js';
+import {
+  createEntrySchema,
+  entryIdParamsSchema,
+  listEntriesQuerySchema,
+  updateEntrySchema,
+} from '../validation/auditSchemas.js';
 import { validate } from '../validation/validate.js';
 
 const HTTP_ACCEPTED = 202;
@@ -18,9 +23,15 @@ export class AuditController {
     response.status(HTTP_ACCEPTED).json(entry);
   };
 
-  /** GET /api/audit-entries */
+  /** GET /api/audit-entries?page&limit&search&status&risk&sort&direction -> one page of entries */
   list = async (request, response) => {
-    response.json(await this.auditService.list(request.tenantId));
+    const query = validate(listEntriesQuerySchema, request.query);
+    response.json(await this.auditService.list(request.tenantId, query));
+  };
+
+  /** GET /api/audit-entries/summary -> totals across all entries */
+  summary = async (request, response) => {
+    response.json(await this.auditService.summary(request.tenantId));
   };
 
   /** GET /api/audit-entries/:id */

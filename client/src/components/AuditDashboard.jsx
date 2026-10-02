@@ -2,18 +2,13 @@ import React from 'react';
 import { toast } from 'sonner';
 import { auditApi } from '../api/client.js';
 import { describeCompletions } from '../lib/announcements.js';
-import {
-  applyFilters,
-  countPending,
-  DEFAULT_FILTERS,
-  DEFAULT_SORT,
-  isDefaultFilters,
-  mergeEntries,
-  sortEntries,
-} from '../lib/entryFilters.js';
+import { DEFAULT_FILTERS, DEFAULT_SORT, isDefaultFilters } from '../lib/entryFilters.js';
+import { buildListParams, PAGE_SIZE } from '../lib/listParams.js';
+import { mergeListResponse, nextSort } from '../lib/listState.js';
 import { Poller } from '../lib/Poller.js';
 import { showUpdateToast } from '../lib/updateToast.jsx';
 import ApiBanner from './ApiBanner.jsx';
+import AuditPagination from './AuditPagination.jsx';
 import AuditTable from './AuditTable.jsx';
 import EntrySheet from './EntrySheet.jsx';
 import KpiStrip from './KpiStrip.jsx';
@@ -25,34 +20,29 @@ import { Toaster } from './ui/toaster.jsx';
 
 const POLL_BASE_DELAY_MS = 1500;
 const POLL_ACTIVE_DELAY_MS = 600; // faster while the AI worker still has entries to finish
-const TOAST_GUTTER_PX = 24;
-const SHEET_WIDTH_PX = 480;
-const SHEET_MIN_VIEWPORT_PX = 640;
 const POLL_MAX_DELAY_MS = 15000;
 const CLOCK_TICK_MS = 30000;
+const FILTER_DEBOUNCE_MS = 250;
+const EMPTY_SUMMARY = { total: 0, pending: 0, highRisk: 0, averageRiskScore: null };
 
-/** Live audit console: polls the API, owns filters and sorting, and coordinates the sheet and dialog. */
+/** Live audit console: polls one server-side page of entries, and owns paging, filters, sorting, the sheet and dialog. */
 export default class AuditDashboard extends React.Component {
   state = {
-    entries: [],
-    loading: true,
-    apiStatus: 'ok',
-    filters: DEFAULT_FILTERS,
-    sort: DEFAULT_SORT,
-    selectedId: null,
-    isSheetOpen: false,
-    detachedEntry: null,
-    isCreateOpen: false,
-    announcement: '',
-    now: Date.now(),
+    entries: [], total: 0, totalPages: 1, summary: EMPTY_SUMMARY,
+    page: 1, filters: DEFAULT_FILTERS, sort: DEFAULT_SORT,
+    loading: true, apiStatus: 'ok',
+    sheetEntry: null, isSheetOpen: false, isCreateOpen: false,
+    announcement: '', now: Date.now(),
   };
   poller = new Poller({
     task: () => this.refresh(),
-    getDelayMs: () => (countPending(this.state.entries) > 0 ? POLL_ACTIVE_DELAY_MS : POLL_BASE_DELAY_MS),
+    getDelayMs: () => (this.state.summary.pending > 0 ? POLL_ACTIVE_DELAY_MS : POLL_BASE_DELAY_MS),
     backoffBaseMs: POLL_BASE_DELAY_MS,
     maxDelayMs: POLL_MAX_DELAY_MS,
   });
   clockTimer = null;
+  filterTimer = null;
+  requestCounter = 0;
   returnFocusTo = null;
 
   componentDidMount() {
@@ -63,12 +53,20 @@ export default class AuditDashboard extends React.Component {
   componentWillUnmount() {
     this.poller.stop();
     clearInterval(this.clockTimer);
+    clearTimeout(this.filterTimer);
   }
 
-  /** @returns {Promise<boolean>} whether the API answered */
+  /** Fetches the current page and the summary. @returns {Promise<boolean>} whether the API answered */
   async refresh() {
+    const requestId = ++this.requestCounter;
+    const { page, filters, sort } = this.state;
     try {
-      this.applyEntries(await auditApi.list());
+      const [list, summary] = await Promise.all([
+        auditApi.list(buildListParams({ page, filters, sort })),
+        auditApi.summary(),
+      ]);
+      if (requestId === this.requestCounter) this.applyResponse(list, summary);
+      await this.refreshOffPageSheetEntry();
       return true;
     } catch {
       this.setState((previous) => (previous.apiStatus === 'down' && !previous.loading ? null : { apiStatus: 'down', loading: false }));
@@ -76,19 +74,43 @@ export default class AuditDashboard extends React.Component {
     }
   }
 
-  applyEntries(incoming) {
-    const announcement = describeCompletions(this.state.entries, incoming);
+  applyResponse(list, summary) {
+    const announcement = describeCompletions(this.state.entries, list.items);
     this.setState((previous) => {
-      const entries = mergeEntries(previous.entries, incoming);
-      const isUnchanged = entries === previous.entries && !previous.loading && previous.apiStatus === 'ok';
-      if (isUnchanged && !announcement) return null;
-      return { entries, loading: false, apiStatus: 'ok', announcement: announcement ?? previous.announcement };
+      const changes = mergeListResponse(previous, list, summary);
+      if (!changes && !announcement) return null;
+      return { ...changes, announcement: announcement ?? previous.announcement };
     });
   }
 
+  /** An entry opened from similar results may not be on this page; keep its sheet data current anyway. */
+  async refreshOffPageSheetEntry() {
+    const { sheetEntry, isSheetOpen, entries } = this.state;
+    if (!isSheetOpen || !sheetEntry || entries.some((entry) => entry._id === sheetEntry._id)) return;
+    const fresh = await auditApi.get(sheetEntry._id);
+    if (fresh.updated !== sheetEntry.updated) this.setState({ sheetEntry: fresh });
+  }
+
+  refreshSoon = () => {
+    clearTimeout(this.filterTimer);
+    this.filterTimer = setTimeout(() => this.refresh(), FILTER_DEBOUNCE_MS);
+  };
+
+  changePage = (page) => this.setState({ page }, () => this.refresh());
+
+  changeFilters = (change) =>
+    this.setState((previous) => ({ filters: { ...previous.filters, ...change }, page: 1 }), this.refreshSoon);
+
+  clearFilters = () => this.setState({ filters: DEFAULT_FILTERS, page: 1 }, () => this.refresh());
+
+  changeSort = (field) =>
+    this.setState((previous) => ({ sort: nextSort(previous.sort, field), page: 1 }), () => this.refresh());
+
+  /** Rejects with the API error so the dialog can show field messages. */
   createEntry = async (payload) => {
-    const created = await auditApi.create(payload);
-    this.setState((previous) => ({ isCreateOpen: false, entries: [created, ...previous.entries] }));
+    await auditApi.create(payload);
+    // Jump to the newest-first first page so the new PENDING row is visible.
+    this.setState({ isCreateOpen: false, page: 1, filters: DEFAULT_FILTERS, sort: DEFAULT_SORT }, () => this.refresh());
     toast.success('Evidence ingested · AI analysis queued');
   };
 
@@ -104,15 +126,16 @@ export default class AuditDashboard extends React.Component {
 
   openEntry = async (id) => {
     if (!this.state.isSheetOpen) this.returnFocusTo = document.activeElement;
-    if (!this.state.entries.some((entry) => entry._id === id)) {
+    let entry = this.state.entries.find((candidate) => candidate._id === id);
+    if (!entry) {
       try {
-        this.setState({ detachedEntry: await auditApi.get(id) });
+        entry = await auditApi.get(id);
       } catch (error) {
         toast.error(error.message);
         return;
       }
     }
-    this.setState({ selectedId: id, isSheetOpen: true });
+    this.setState({ sheetEntry: entry, isSheetOpen: true });
   };
 
   /** Radix only restores focus to a Trigger; this sheet has none, so return it to the row that opened it. */
@@ -121,39 +144,20 @@ export default class AuditDashboard extends React.Component {
     if (this.returnFocusTo?.isConnected) this.returnFocusTo.focus();
   };
 
-  toastOffsetRight() {
-    const sheetCoversRight = this.state.isSheetOpen && window.innerWidth >= SHEET_MIN_VIEWPORT_PX;
-    return sheetCoversRight ? SHEET_WIDTH_PX + TOAST_GUTTER_PX : TOAST_GUTTER_PX;
-  }
-
-  changeFilters = (change) => this.setState((previous) => ({ filters: { ...previous.filters, ...change } }));
-
-  clearFilters = () => this.setState({ filters: DEFAULT_FILTERS });
-
-  changeSort = (field) =>
-    this.setState((previous) => ({
-      sort: { field, direction: previous.sort.field === field && previous.sort.direction === 'desc' ? 'asc' : 'desc' },
-    }));
-
-  findSelectedEntry() {
-    const { entries, selectedId, detachedEntry } = this.state;
-    return entries.find((entry) => entry._id === selectedId) ?? (detachedEntry?._id === selectedId ? detachedEntry : null);
-  }
-
   render() {
-    const { entries, loading, apiStatus, filters, sort, isSheetOpen, isCreateOpen, announcement } = this.state;
+    const { entries, total, totalPages, summary, page, filters, sort, loading, apiStatus } = this.state;
+    const { sheetEntry, isSheetOpen, isCreateOpen, announcement } = this.state;
     const isApiDown = apiStatus === 'down';
-    const selectedEntry = this.findSelectedEntry();
     return (
       <div className="min-h-screen">
         <TopBar isApiDown={isApiDown} />
         <main className="mx-auto flex max-w-360 flex-col gap-5 px-4 py-6 md:px-6">
           <PageHeader onNewEntry={() => this.setState({ isCreateOpen: true })} />
-          <KpiStrip entries={entries} />
+          <KpiStrip summary={summary} />
           <Toolbar filters={filters} isApiDown={isApiDown} onFiltersChange={this.changeFilters} />
           {isApiDown && <ApiBanner />}
           <AuditTable
-            entries={sortEntries(applyFilters(entries, filters), sort)}
+            entries={entries}
             loading={loading}
             sort={sort}
             hasActiveFilter={!isDefaultFilters(filters)}
@@ -162,10 +166,13 @@ export default class AuditDashboard extends React.Component {
             onNewEntry={() => this.setState({ isCreateOpen: true })}
             onOpen={this.openEntry}
           />
+          {!loading && total > 0 && (
+            <AuditPagination page={page} totalPages={totalPages} total={total} pageSize={PAGE_SIZE} onPageChange={this.changePage} />
+          )}
         </main>
-        {selectedEntry && (
+        {sheetEntry && (
           <EntrySheet
-            entry={selectedEntry}
+            entry={sheetEntry}
             open={isSheetOpen}
             onOpenChange={(open) => this.setState({ isSheetOpen: open })}
             onSave={this.saveEntry}
@@ -179,7 +186,7 @@ export default class AuditDashboard extends React.Component {
           onOpenChange={(open) => this.setState({ isCreateOpen: open })}
           onCreate={this.createEntry}
         />
-        <Toaster offsetRight={this.toastOffsetRight()} />
+        <Toaster isSheetOpen={isSheetOpen} />
         <div aria-live="polite" className="sr-only">
           {announcement}
         </div>

@@ -21,8 +21,17 @@ export class AuditService {
     return this.repository.create({ ...payload, evidenceId, tenantId });
   }
 
-  list(tenantId) {
-    return this.repository.list(tenantId);
+  /**
+   * @param {object} query validated paging, filter and sort options
+   * @returns {Promise<{ items: object[], total: number, page: number, pageSize: number, totalPages: number }>}
+   */
+  async list(tenantId, query) {
+    const { items, total } = await this.repository.list(tenantId, query);
+    return { items, total, page: query.page, pageSize: query.limit, totalPages: Math.max(1, Math.ceil(total / query.limit)) };
+  }
+
+  summary(tenantId) {
+    return this.repository.summarize(tenantId);
   }
 
   /** @throws {NotFoundError} */

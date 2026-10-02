@@ -35,7 +35,7 @@ describe('audit entry API', () => {
     await env.createEntry();
     await drainWorker(env.createWorker());
     const { body } = await env.api.get('/api/audit-entries').expect(200);
-    expect(body[0].aiMetadata.semanticVector).toBeUndefined();
+    expect(body.items[0].aiMetadata.semanticVector).toBeUndefined();
   });
 
   describe('POST /:id/similar', () => {

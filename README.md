@@ -29,7 +29,8 @@ Set `OPENAI_API_KEY` and `MOCK_AI=false` to use a live model; otherwise the dete
 | Endpoint | Behaviour |
 |---|---|
 | `POST /api/audit-entries` | 202, saved as `PENDING` |
-| `GET /api/audit-entries` | newest first, vectors omitted |
+| `GET /api/audit-entries` | one page: `?page=1&limit=10&search=&status=&risk=&sort=created&direction=desc`; returns `{ items, total, page, pageSize, totalPages }`, vectors omitted |
+| `GET /api/audit-entries/summary` | totals across all entries: `{ total, pending, highRisk, averageRiskScore }` |
 | `GET /api/audit-entries/:id` | one entry |
 | `PUT /api/audit-entries/:id` | smart delta update; returns `{ entry, path, changedFields, durationMs }` and header `X-Update-Path` |
 | `POST /api/audit-entries/:id/similar` | top 3 most similar completed entries; 409 while the source is not `COMPLETED` |
@@ -78,6 +79,13 @@ and `controlId`, not the keys present in the request body. Core change: `AI_REQU
 single `$set` on `aiMetadata.auditorNotes` that touches neither status, version nor lock. Nothing changed:
 `NO_CHANGE`, no write. The worker never writes `auditorNotes`, so a note saved while the AI runs survives. A schema
 allowlist rejects any other field with a 400.
+
+### Pagination
+Paging, filtering, search and sorting run on the server (offset pagination, 10 per page, max 50), so they apply to the
+whole data set rather than the page on screen. Changing a filter, search or sort resets to page 1; creating an entry
+jumps to page 1 where the newest entry appears first. The header numbers come from a separate summary endpoint so they
+stay global while the list is filtered. Offset paging is simple and fits page-number navigation; at large scale a
+cursor would avoid rows shifting between pages when entries arrive.
 
 ## Trade-offs
 - The UI polls every 1.5s (paused while the tab is hidden); SSE or change streams would push updates.
