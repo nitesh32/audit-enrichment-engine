@@ -1,4 +1,4 @@
-import { SIMILAR_TOP_K, STATUS, VECTOR_SPACES } from '../config/constants.js';
+import { SIMILAR_TOP_K, STATUS } from '../config/constants.js';
 import { ConflictError, NotFoundError } from '../errors/errors.js';
 import { cosineSimilarity } from './cosineSimilarity.js';
 
@@ -23,11 +23,7 @@ export class SimilarityService {
     if (!source) throw new NotFoundError(`Audit entry ${entryId} not found`);
     if (source.aiMetadata.status !== STATUS.COMPLETED) throw new ConflictError('Vector not ready');
 
-    const candidates = await this.repository.findSimilarityCandidates({
-      tenantId,
-      excludeId: source._id,
-      providers: VECTOR_SPACES.find((space) => space.includes(source.aiMetadata.provider)),
-    });
+    const candidates = await this.repository.findSimilarityCandidates({ tenantId, excludeId: source._id });
 
     return candidates
       .map((candidate) => ({

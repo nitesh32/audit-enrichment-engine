@@ -2,10 +2,12 @@ import { AI_MAX_RETRIES, AI_RETRY_BASE_MS, PROVIDER } from '../../config/constan
 import { Semaphore } from '../../utils/Semaphore.js';
 import { withRetry } from '../../utils/retry.js';
 import { riskLevelFor } from './riskRules.js';
+import { vectorize } from './vectorizer.js';
 
 /**
  * Facade over AI providers: caps concurrent calls, retries transient errors
  * and falls back to the local provider when the primary one fails.
+ * The semantic vector is always built locally, so similarity works the same with any provider.
  */
 export class AIService {
   /**
@@ -36,7 +38,7 @@ export class AIService {
 
   async #enrichWith(provider, entry, providerName) {
     const analysis = await this.#limited(() => provider.analyze(entry));
-    const semanticVector = await this.#limited(() => provider.embed(entry.description));
+    const semanticVector = vectorize(entry.description);
     return { ...analysis, riskLevel: riskLevelFor(analysis.riskScore), semanticVector, provider: providerName };
   }
 

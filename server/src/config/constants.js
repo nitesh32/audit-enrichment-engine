@@ -8,16 +8,10 @@ export const STATUS = Object.freeze({
 export const RISK_LEVEL = Object.freeze({ LOW: 'LOW', MEDIUM: 'MEDIUM', HIGH: 'HIGH' });
 
 export const PROVIDER = Object.freeze({
-  OPENAI: 'openai',
+  OPENROUTER: 'openrouter',
   MOCK: 'mock',
   MOCK_FALLBACK: 'mock-fallback',
 });
-
-/** Providers whose embeddings live in the same vector space and can be compared. */
-export const VECTOR_SPACES = Object.freeze([
-  [PROVIDER.OPENAI],
-  [PROVIDER.MOCK, PROVIDER.MOCK_FALLBACK],
-]);
 
 export const UPDATE_PATH = Object.freeze({
   FAST_TRACK: 'FAST_TRACK',
@@ -73,7 +67,7 @@ export const POLL_INTERVAL_MS = 500;
 // AI
 export const MOCK_DELAY_MS = 400;
 export const VECTOR_DIM = 8;
-export const EMBEDDING_MODEL = 'text-embedding-3-small';
+export const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 export const AI_REQUEST_TIMEOUT_MS = 15000;
 export const AI_MAX_RETRIES = 2;
 export const AI_RETRY_BASE_MS = 500;

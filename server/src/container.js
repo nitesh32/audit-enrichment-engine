@@ -2,7 +2,7 @@ import { AuditController } from './controllers/AuditController.js';
 import { AuditRepository } from './repositories/AuditRepository.js';
 import { AIService } from './services/ai/AIService.js';
 import { MockAIProvider } from './services/ai/MockAIProvider.js';
-import { OpenAIProvider } from './services/ai/OpenAIProvider.js';
+import { OpenRouterProvider } from './services/ai/OpenRouterProvider.js';
 import { AuditService } from './services/AuditService.js';
 import { SimilarityService } from './services/SimilarityService.js';
 import { AIWorkerService } from './workers/AIWorkerService.js';
@@ -10,10 +10,13 @@ import { POLL_INTERVAL_MS } from './config/constants.js';
 
 function createAIService(config, logger) {
   const mockProvider = new MockAIProvider();
-  const useMock = config.MOCK_AI || !config.OPENAI_API_KEY;
+  const hasApiKey = Boolean(config.OPENROUTER_API_KEY);
+  if (!config.MOCK_AI && !hasApiKey) logger.warn('MOCK_AI is false but OPENROUTER_API_KEY is empty; using the mock AI');
+  const useMock = config.MOCK_AI || !hasApiKey;
   const provider = useMock
     ? mockProvider
-    : new OpenAIProvider({ apiKey: config.OPENAI_API_KEY, model: config.OPENAI_MODEL });
+    : new OpenRouterProvider({ apiKey: config.OPENROUTER_API_KEY, model: config.OPENROUTER_MODEL });
+  logger.info({ provider: provider.name, model: useMock ? null : config.OPENROUTER_MODEL }, 'ai.provider');
   return new AIService({
     provider,
     fallbackProvider: mockProvider,

@@ -82,14 +82,13 @@ export class AuditRepository {
     return { total, pending, highRisk, averageRiskScore: averageRiskScore === null ? null : Math.round(averageRiskScore) };
   }
 
-  /** Completed entries in the same vector space, with only the fields the UI needs. */
-  findSimilarityCandidates({ tenantId, excludeId, providers }) {
+  /** Other completed entries of the tenant, with only the fields the UI needs plus the vector. */
+  findSimilarityCandidates({ tenantId, excludeId }) {
     return AuditEntry.find(
       {
         tenantId,
         _id: { $ne: excludeId },
         'aiMetadata.status': STATUS.COMPLETED,
-        'aiMetadata.provider': { $in: providers },
       },
       SIMILARITY_PROJECTION,
     ).lean();

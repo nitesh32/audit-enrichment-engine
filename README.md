@@ -21,8 +21,15 @@ npm run dev                 # api + worker + client (http://localhost:5173)
 | `npm test` | unit + integration tests (in-memory MongoDB, no Docker needed) |
 | `npm run lint` | ESLint |
 
-Set `OPENAI_API_KEY` and `MOCK_AI=false` to use a live model; otherwise the deterministic local engine runs
-(400ms simulated delay).
+### AI mode
+| Mode | `.env` | Behaviour |
+|---|---|---|
+| Mock (default) | `MOCK_AI=true` | Deterministic local engine with a 400ms simulated delay. No key needed. |
+| Real AI | `MOCK_AI=false`, `OPENROUTER_API_KEY=<your key>` | Risk score, summary and flags come from an LLM through [OpenRouter](https://openrouter.ai). Pick the model with `OPENROUTER_MODEL` (default `openai/gpt-4o-mini`). |
+
+If `MOCK_AI=false` but the key is empty, the app logs a warning and uses the mock. If the LLM call fails or returns
+invalid output, that entry is processed by the mock and tagged `mock-fallback`. Restart the API and worker after
+changing `.env`; each logs which provider it is using (`ai.provider`).
 
 ## API
 
@@ -41,10 +48,12 @@ Requests are scoped to one tenant: `DEFAULT_TENANT_ID`, or the `X-Tenant-Id` hea
 
 ### AI workload integration
 `AIService` is a facade over providers: a semaphore caps concurrent calls (`AI_MAX_CONCURRENCY`), transient
-429/5xx errors are retried with jittered exponential backoff, and the OpenAI call has a 15s timeout and a zod-validated
-JSON reply. If the live provider still fails or returns invalid output, the result is produced by the local engine
-and tagged `provider: 'mock-fallback'`. The local engine is deterministic, which keeps tests stable. A concurrency cap
-is the rate-limiting strategy; a requests-per-minute limiter would be the next step.
+429/5xx errors are retried with jittered exponential backoff, and the OpenRouter call has a 15s timeout and a
+zod-validated JSON reply (code fences and surrounding prose are tolerated). If the live provider still fails or returns
+invalid output, the result is produced by the local engine and tagged `provider: 'mock-fallback'`. The local engine is
+deterministic, which keeps tests stable. A concurrency cap is the rate-limiting strategy; a requests-per-minute limiter
+would be the next step. The semantic vector is always built locally (the brief calls it a mock embedding), so the LLM
+only decides risk, and similarity behaves the same in every mode.
 
 ### Asynchronous architecture: MongoDB as the queue
 The status field on each document is the job state, so no extra infrastructure is needed.
@@ -70,8 +79,7 @@ PENDING --claim--> PROCESSING --success--> COMPLETED
 Vectors are built with a hashing trick (tokens hashed into 8 signed buckets, L2-normalised), so descriptions that share
 words get similar vectors. Search is brute-force cosine similarity over the tenant's completed entries: O(n·d) with
 d=8, fine for tens of thousands of records per tenant. At larger scale it moves to Atlas `$vectorSearch` (HNSW) with a
-tenant pre-filter; only `SimilarityService` changes. Candidates are limited to entries embedded by the same provider
-family, because OpenAI and mock vectors are not comparable.
+tenant pre-filter; only `SimilarityService` changes. 
 
 ### Delta evaluation and fast track
 `evaluateDelta` compares normalised values (numbers via `Number`, strings trimmed) of `monetaryImpact`, `description`
