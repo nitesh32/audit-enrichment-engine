@@ -1,4 +1,5 @@
 import React from 'react';
+import { EXAMPLE_EVIDENCE } from '../lib/exampleEvidence.js';
 import { validateField, validateForm } from '../lib/validation.js';
 import { Button } from './ui/button.jsx';
 import { Dialog } from './ui/dialog.jsx';
@@ -15,14 +16,7 @@ const EMPTY_FORM = {
   entityName: '',
   description: '',
   monetaryImpact: '',
-  controlId: 'CTRL-FIN-302',
-};
-
-const EXAMPLE_FORM = {
-  ...EMPTY_FORM,
-  entityName: 'Atlas Freight Partners',
-  description: 'Manual approval override executed for vendor invoice payables exceeding $50k threshold',
-  monetaryImpact: '88500',
+  controlId: '',
 };
 
 // The prototype has no authentication, so every entry is attributed to a demo actor.
@@ -31,12 +25,19 @@ const DEMO_ACTOR_ID = 'user_7731';
 /** Modal form for ingesting evidence, with validation on blur and server errors under the fields. */
 export default class NewEntryDialog extends React.Component {
   state = { form: EMPTY_FORM, errors: {}, formError: null, submitting: false };
+  // Start anywhere, then cycle, so consecutive clicks never give the same example.
+  exampleIndex = Math.floor(Math.random() * EXAMPLE_EVIDENCE.length);
 
   componentDidUpdate(previousProps) {
     if (!previousProps.open && this.props.open) {
       this.setState({ form: EMPTY_FORM, errors: {}, formError: null, submitting: false });
     }
   }
+
+  fillExample = () => {
+    const example = EXAMPLE_EVIDENCE[this.exampleIndex++ % EXAMPLE_EVIDENCE.length];
+    this.setState({ form: { ...EMPTY_FORM, ...example }, errors: {}, formError: null });
+  };
 
   change = (name) => (event) => {
     const { value } = event.target;
@@ -88,7 +89,7 @@ export default class NewEntryDialog extends React.Component {
           {this.renderField('description', 'Description', <Textarea rows={3} {...bind('description')} />)}
           <div className="grid gap-4 sm:grid-cols-2">
             {this.renderField('monetaryImpact', 'Amount (USD)', <Input type="number" min={0} className="font-mono" {...bind('monetaryImpact')} />)}
-            {this.renderField('controlId', 'Control ID', <Input className="font-mono" {...bind('controlId')} />)}
+            {this.renderField('controlId', 'Control ID', <Input className="font-mono" placeholder="e.g. CTRL-FIN-302" {...bind('controlId')} />)}
           </div>
           <Field label="Event type" htmlFor="new-eventType">
             <Select
@@ -101,7 +102,7 @@ export default class NewEntryDialog extends React.Component {
           </Field>
           {formError && !Object.keys(errors).length && <p role="alert" className="text-risk-high">{formError}</p>}
           <div className="flex items-center justify-between gap-2 pt-1">
-            <Button variant="ghost" onClick={() => this.setState({ form: EXAMPLE_FORM, errors: {} })}>
+            <Button variant="ghost" onClick={this.fillExample}>
               Use example
             </Button>
             <Button type="submit" variant="primary" loading={submitting}>
