@@ -21,7 +21,7 @@ export default class NotesSection extends React.Component {
             placeholder="Add your review notes"
           />
         </Field>
-        <Button variant="secondary" className="mt-3" disabled={!isDirty} loading={isSaving} onClick={onSave}>
+        <Button variant="primary" className="mt-3" disabled={!isDirty} loading={isSaving} onClick={onSave}>
           {!isSaving && <Zap aria-hidden="true" />}
           Save notes
         </Button>

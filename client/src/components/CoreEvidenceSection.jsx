@@ -25,7 +25,7 @@ export default class CoreEvidenceSection extends React.Component {
             <Input id="core-control" value={draft.controlId} onChange={this.change('controlId')} className="font-mono" />
           </Field>
         </div>
-        <Button variant="secondary" className="mt-3" disabled={!isDirty || !isValid} loading={isSaving} onClick={onSave}>
+        <Button variant="primary" className="mt-3" disabled={!isDirty || !isValid} loading={isSaving} onClick={onSave}>
           Save &amp; re-analyze
         </Button>
       </section>
