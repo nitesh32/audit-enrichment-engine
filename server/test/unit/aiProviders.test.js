@@ -65,10 +65,35 @@ describe('OpenRouterProvider', () => {
   it.each([
     ['text with no JSON', 'I cannot help with that'],
     ['a score out of range', JSON.stringify({ ...validReply, riskScore: 140 })],
-    ['an unknown flag', JSON.stringify({ ...validReply, anomalyFlags: ['MADE_UP_FLAG'] })],
     ['a missing summary', JSON.stringify({ riskScore: 50, anomalyFlags: [] })],
   ])('rejects %s', async (_name, content) => {
     fake.state.respond = () => completionWith(content);
+    await expect(provider.analyze(entry)).rejects.toThrow();
+  });
+
+  it.each([
+    ['different casing', ['manual override']],
+    ['title case with a space', ['Manual Override']],
+    ['a hyphen', ['manual-override']],
+    ['surrounding spaces', ['  MANUAL_OVERRIDE ']],
+  ])('normalizes a flag written with %s', async (_name, flags) => {
+    fake.state.respond = () => completionWith(JSON.stringify({ ...validReply, anomalyFlags: flags }));
+    expect((await provider.analyze(entry)).anomalyFlags).toEqual(['MANUAL_OVERRIDE']);
+  });
+
+  it('drops unknown and repeated flags but keeps the valid ones and the rest of the reply', async () => {
+    const flags = ['Manual Override', 'MANUAL_OVERRIDE', 'SUSPICIOUS_VENDOR', 'round amount'];
+    fake.state.respond = () => completionWith(JSON.stringify({ ...validReply, anomalyFlags: flags }));
+    expect(await provider.analyze(entry)).toEqual({ riskScore: 82, aiSummary: 'Large manual override.', anomalyFlags: ['MANUAL_OVERRIDE', 'ROUND_AMOUNT'] });
+  });
+
+  it('treats a reply with no flags field as no flags', async () => {
+    fake.state.respond = () => completionWith(JSON.stringify({ riskScore: 30, aiSummary: 'Looks routine.' }));
+    expect((await provider.analyze(entry)).anomalyFlags).toEqual([]);
+  });
+
+  it('still rejects flags that are not text', async () => {
+    fake.state.respond = () => completionWith(JSON.stringify({ ...validReply, anomalyFlags: [{ flag: 'MANUAL_OVERRIDE' }] }));
     await expect(provider.analyze(entry)).rejects.toThrow();
   });
 

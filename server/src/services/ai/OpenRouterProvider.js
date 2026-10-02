@@ -2,10 +2,19 @@ import OpenAI from 'openai';
 import { z } from 'zod';
 import { AI_REQUEST_TIMEOUT_MS, ANOMALY_FLAG, OPENROUTER_BASE_URL, PROVIDER } from '../../config/constants.js';
 
+const KNOWN_FLAGS = new Set(Object.values(ANOMALY_FLAG));
+
+/** "Manual Override" or "manual-override" becomes MANUAL_OVERRIDE; unknown and repeated flags are dropped. */
+function normalizeFlags(flags) {
+  const codes = flags.map((flag) => flag.trim().toUpperCase().replace(/[\s-]+/g, '_'));
+  return [...new Set(codes)].filter((code) => KNOWN_FLAGS.has(code));
+}
+
+// The score and summary stay strict; flags are forgiving, because models vary most in how they word them.
 const analysisSchema = z.object({
   riskScore: z.number().min(0).max(100).transform(Math.round),
   aiSummary: z.string().min(1),
-  anomalyFlags: z.array(z.enum(Object.values(ANOMALY_FLAG))),
+  anomalyFlags: z.array(z.string()).default([]).transform(normalizeFlags),
 });
 
 const SYSTEM_PROMPT = `You are an audit risk analyst. Reply with one JSON object only, no other text:

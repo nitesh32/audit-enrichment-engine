@@ -2,6 +2,7 @@ import React from 'react';
 import FlagsCell from './FlagsCell.jsx';
 import RelativeTime from './RelativeTime.jsx';
 import RiskScoreCell from './RiskScoreCell.jsx';
+import SemanticVector from './SemanticVector.jsx';
 import StatusBadge from './StatusBadge.jsx';
 import SummaryCell from './SummaryCell.jsx';
 
@@ -48,6 +49,7 @@ export default class AiAssessmentSection extends React.Component {
               <FlagsCell flags={aiMetadata.anomalyFlags} showAll />
             </div>
             {this.renderMeta(aiMetadata)}
+            <SemanticVector entryId={this.props.entry._id} version={aiMetadata.completedAt} />
           </>
         ) : (
           <div className="flex flex-col gap-3">
