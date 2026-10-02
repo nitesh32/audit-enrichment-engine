@@ -1,14 +1,13 @@
 import React from 'react';
 import { Search } from 'lucide-react';
 import { RISK_FILTERS, STATUS_FILTERS } from '../lib/entryFilters.js';
-import { cn } from '../lib/cn.js';
 import { Input } from './ui/field.jsx';
 import { Select } from './ui/select.jsx';
 
-/** Search, status and risk filters, and the auto-refresh indicator. */
+/** Search, status and risk filters. */
 export default class Toolbar extends React.Component {
   render() {
-    const { filters, isApiDown, onFiltersChange } = this.props;
+    const { filters, onFiltersChange } = this.props;
     return (
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative w-full sm:w-72">
@@ -34,10 +33,6 @@ export default class Toolbar extends React.Component {
           options={RISK_FILTERS}
           onValueChange={(risk) => onFiltersChange({ risk })}
         />
-        <span className="ml-auto hidden items-center gap-2 text-label text-fg-muted sm:flex">
-          Auto-refresh
-          <span className={cn('size-1.5 rounded-full', isApiDown ? 'bg-fg-subtle' : 'animate-pulse-dot bg-risk-low')} />
-        </span>
       </div>
     );
   }

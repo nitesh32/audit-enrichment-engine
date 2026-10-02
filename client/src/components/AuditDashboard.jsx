@@ -18,9 +18,9 @@ import Toolbar from './Toolbar.jsx';
 import TopBar from './TopBar.jsx';
 import { Toaster } from './ui/toaster.jsx';
 
-const POLL_BASE_DELAY_MS = 1500;
-const POLL_ACTIVE_DELAY_MS = 600; // faster while the AI worker still has entries to finish
-const POLL_MAX_DELAY_MS = 15000;
+const POLL_INTERVAL_MS = 600;
+const RETRY_BASE_DELAY_MS = 1500;
+const RETRY_MAX_DELAY_MS = 15000;
 const CLOCK_TICK_MS = 30000;
 const FILTER_DEBOUNCE_MS = 250;
 const EMPTY_SUMMARY = { total: 0, pending: 0, highRisk: 0, averageRiskScore: null };
@@ -35,10 +35,10 @@ export default class AuditDashboard extends React.Component {
     announcement: '', now: Date.now(),
   };
   poller = new Poller({
-    task: () => this.refresh(),
-    getDelayMs: () => (this.state.summary.pending > 0 ? POLL_ACTIVE_DELAY_MS : POLL_BASE_DELAY_MS),
-    backoffBaseMs: POLL_BASE_DELAY_MS,
-    maxDelayMs: POLL_MAX_DELAY_MS,
+    task: () => (this.needsPolling() ? this.refresh() : Promise.resolve(true)),
+    intervalMs: POLL_INTERVAL_MS,
+    backoffBaseMs: RETRY_BASE_DELAY_MS,
+    maxDelayMs: RETRY_MAX_DELAY_MS,
   });
   clockTimer = null;
   filterTimer = null;
@@ -54,6 +54,12 @@ export default class AuditDashboard extends React.Component {
     this.poller.stop();
     clearInterval(this.clockTimer);
     clearTimeout(this.filterTimer);
+  }
+
+  /** The network is only used while the first load, an AI job or a failed request is outstanding. */
+  needsPolling() {
+    const { loading, apiStatus, summary } = this.state;
+    return loading || apiStatus === 'down' || summary.pending > 0;
   }
 
   /** Fetches the current page and the summary. @returns {Promise<boolean>} whether the API answered */
@@ -147,15 +153,14 @@ export default class AuditDashboard extends React.Component {
   render() {
     const { entries, total, totalPages, summary, page, filters, sort, loading, apiStatus } = this.state;
     const { sheetEntry, isSheetOpen, isCreateOpen, announcement } = this.state;
-    const isApiDown = apiStatus === 'down';
     return (
       <div className="min-h-screen">
-        <TopBar isApiDown={isApiDown} />
+        <TopBar />
         <main className="mx-auto flex max-w-360 flex-col gap-5 px-4 py-6 md:px-6">
           <PageHeader onNewEntry={() => this.setState({ isCreateOpen: true })} />
           <KpiStrip summary={summary} />
-          <Toolbar filters={filters} isApiDown={isApiDown} onFiltersChange={this.changeFilters} />
-          {isApiDown && <ApiBanner />}
+          <Toolbar filters={filters} onFiltersChange={this.changeFilters} />
+          {apiStatus === 'down' && <ApiBanner />}
           <AuditTable
             entries={entries}
             loading={loading}

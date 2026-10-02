@@ -88,6 +88,6 @@ stay global while the list is filtered. Offset paging is simple and fits page-nu
 cursor would avoid rows shifting between pages when entries arrive.
 
 ## Trade-offs
-- The UI polls every 1.5s (paused while the tab is hidden); SSE or change streams would push updates.
+- The UI fetches only while something is pending, after your own actions and while retrying a failed request, so entries ingested elsewhere appear on your next action; SSE or change streams would push them.
 - Tenancy is a single demo tenant with an optional header, not authentication.
 - Similarity on 8 dimensions is coarse by design (mock embeddings).
