@@ -3,6 +3,7 @@ import { createDrafts, isCoreDirty, isCoreValid, isNotesDirty } from '../lib/ent
 import AiAssessmentSection from './AiAssessmentSection.jsx';
 import CoreEvidenceSection from './CoreEvidenceSection.jsx';
 import NotesSection from './NotesSection.jsx';
+import RelativeTime from './RelativeTime.jsx';
 import SimilarSection from './SimilarSection.jsx';
 import StatusBadge from './StatusBadge.jsx';
 import { Sheet } from './ui/sheet.jsx';
@@ -62,9 +63,12 @@ export default class EntrySheet extends React.Component {
         onCloseAutoFocus={onCloseAutoFocus}
         title={entry.evidenceId}
         subtitle={
-          <span className="flex items-center gap-2">
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
             {entry.entityName}
             <StatusBadge status={entry.aiMetadata.status} riskLevel={entry.aiMetadata.riskLevel} lastError={entry.aiMetadata.lastError} />
+            <span className="text-fg-subtle">
+              Added <RelativeTime value={entry.created} />
+            </span>
           </span>
         }
       >

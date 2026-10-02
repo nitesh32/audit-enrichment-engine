@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChevronRight } from 'lucide-react';
 import { formatCurrency } from '../lib/format.js';
+import RelativeTime from './RelativeTime.jsx';
 import StatusBadge from './StatusBadge.jsx';
 import SummaryCell from './SummaryCell.jsx';
 
@@ -27,6 +28,7 @@ export default class AuditListItem extends React.PureComponent {
             <div className="mt-1 flex items-center gap-2">
               <StatusBadge status={aiMetadata.status} riskLevel={aiMetadata.riskLevel} lastError={aiMetadata.lastError} />
               <span className="font-mono text-label text-fg-muted">{entry.evidenceId}</span>
+              <RelativeTime value={entry.created} className="text-label text-fg-subtle" />
             </div>
             <div className="mt-2">
               <SummaryCell status={aiMetadata.status} summary={aiMetadata.aiSummary} lines={1} />

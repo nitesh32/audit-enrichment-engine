@@ -1,10 +1,9 @@
 import React from 'react';
-import { formatAbsoluteTime, formatRelativeTime } from '../lib/format.js';
 import FlagsCell from './FlagsCell.jsx';
+import RelativeTime from './RelativeTime.jsx';
 import RiskScoreCell from './RiskScoreCell.jsx';
 import StatusBadge from './StatusBadge.jsx';
 import SummaryCell from './SummaryCell.jsx';
-import { Tooltip } from './ui/tooltip.jsx';
 
 /** Read-only AI result: score, level, full summary, flags and provenance. */
 export default class AiAssessmentSection extends React.Component {
@@ -22,9 +21,7 @@ export default class AiAssessmentSection extends React.Component {
         <div>
           <dt className="text-label-caps">Completed</dt>
           <dd className="mt-1 text-label">
-            <Tooltip content={formatAbsoluteTime(completedAt)}>
-              <span>{formatRelativeTime(completedAt)}</span>
-            </Tooltip>
+            <RelativeTime value={completedAt} />
           </dd>
         </div>
       </dl>

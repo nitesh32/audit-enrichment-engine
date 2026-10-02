@@ -3,6 +3,7 @@ import { ChevronRight } from 'lucide-react';
 import { formatCurrency, isAiPending } from '../lib/format.js';
 import { cn } from '../lib/cn.js';
 import FlagsCell from './FlagsCell.jsx';
+import RelativeTime from './RelativeTime.jsx';
 import RiskScoreCell from './RiskScoreCell.jsx';
 import StatusBadge from './StatusBadge.jsx';
 import SummaryCell from './SummaryCell.jsx';
@@ -53,7 +54,11 @@ export default class AuditRow extends React.PureComponent {
         )}
       >
         <td className="px-3 py-1">
-          <div className="font-mono text-label text-fg-muted">{entry.evidenceId}</div>
+          <div className="flex items-center gap-1.5 whitespace-nowrap text-label text-fg-muted">
+            <span className="font-mono">{entry.evidenceId}</span>
+            <span aria-hidden="true">·</span>
+            <RelativeTime value={entry.created} className="text-fg-subtle" />
+          </div>
           <div className="max-w-56 truncate font-medium">{entry.entityName}</div>
         </td>
         <td className="px-3 py-1 text-right font-mono tabular-nums">{formatCurrency(entry.monetaryImpact)}</td>

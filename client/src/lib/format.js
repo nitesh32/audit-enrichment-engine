@@ -15,7 +15,7 @@ const FLAG_LABELS = {
 const SECONDS_PER_MINUTE = 60;
 const MINUTES_PER_HOUR = 60;
 const HOURS_PER_DAY = 24;
-const JUST_NOW_SECONDS = 10;
+const JUST_NOW_SECONDS = 2;
 
 export const formatCurrency = (amount) => currencyFormatter.format(amount);
 export const formatPercent = (ratio) => `${Math.round(ratio * 100)}%`;
@@ -29,8 +29,8 @@ export function formatRelativeTime(isoDate, now = Date.now()) {
   if (seconds < JUST_NOW_SECONDS) return 'just now';
   if (seconds < SECONDS_PER_MINUTE) return `${seconds}s ago`;
   const minutes = Math.floor(seconds / SECONDS_PER_MINUTE);
-  if (minutes < MINUTES_PER_HOUR) return `${minutes}m ago`;
+  if (minutes < MINUTES_PER_HOUR) return `${minutes} min ago`;
   const hours = Math.floor(minutes / MINUTES_PER_HOUR);
-  if (hours < HOURS_PER_DAY) return `${hours}h ago`;
+  if (hours < HOURS_PER_DAY) return `${hours} hr ago`;
   return `${Math.floor(hours / HOURS_PER_DAY)}d ago`;
 }

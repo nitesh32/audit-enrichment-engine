@@ -21,7 +21,6 @@ import { Toaster } from './ui/toaster.jsx';
 const POLL_INTERVAL_MS = 600;
 const RETRY_BASE_DELAY_MS = 1500;
 const RETRY_MAX_DELAY_MS = 15000;
-const CLOCK_TICK_MS = 30000;
 const FILTER_DEBOUNCE_MS = 250;
 const EMPTY_SUMMARY = { total: 0, pending: 0, highRisk: 0, averageRiskScore: null };
 
@@ -32,7 +31,7 @@ export default class AuditDashboard extends React.Component {
     page: 1, filters: DEFAULT_FILTERS, sort: DEFAULT_SORT,
     loading: true, apiStatus: 'ok',
     sheetEntry: null, isSheetOpen: false, isCreateOpen: false,
-    announcement: '', now: Date.now(),
+    announcement: '',
   };
   poller = new Poller({
     task: () => (this.needsPolling() ? this.refresh() : Promise.resolve(true)),
@@ -40,19 +39,16 @@ export default class AuditDashboard extends React.Component {
     backoffBaseMs: RETRY_BASE_DELAY_MS,
     maxDelayMs: RETRY_MAX_DELAY_MS,
   });
-  clockTimer = null;
   filterTimer = null;
   requestCounter = 0;
   returnFocusTo = null;
 
   componentDidMount() {
     this.poller.start();
-    this.clockTimer = setInterval(() => this.setState({ now: Date.now() }), CLOCK_TICK_MS);
   }
 
   componentWillUnmount() {
     this.poller.stop();
-    clearInterval(this.clockTimer);
     clearTimeout(this.filterTimer);
   }
 
